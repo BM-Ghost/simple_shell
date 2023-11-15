@@ -70,7 +70,7 @@ int setShellEnvironmentVariable(ShellInfo *info)
         return 1;
     }
 
-    if (setenv(info, info->arg[1], info->arg[2]))
+    if (setenv(ShellInfo, info->arg[1], info->arg[2]))
         return 0;
     return 1;
 }
@@ -97,7 +97,7 @@ int unsetShellEnvironmentVariable(ShellInfo *info)
     }
 
     for (i = 1; i <= info->argc; i++)
-        unsetenv(info, info->argv[i]);
+        unsetenv(ShellInfo, info->argv[i]);
 
     return 0;
 }

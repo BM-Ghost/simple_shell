@@ -21,6 +21,7 @@
 #define AND_COMMAND 2
 #define CHAIN_COMMAND 3
 
+
 #define CONVERT_LOWERCASE 1
 #define CONVERT_UNSIGNED 2
 
