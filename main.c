@@ -1,35 +1,48 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "shell.h"
 
-#define BUFFER_SIZE 1024
+/**
+ * main - entry point
+ * @argc: argument count
+ * @argv: argument vector
+ *
+ * Return: 0 on success, 1 on error
+ */
 
-int main(void) {
-    char *buffer = NULL;
-    size_t bufsize = 0;
+int main(int argc, char **argv)
+{
+    ShellInfo shellInfo = SHELL_INFO_INITIALIZER;
+    int fileDescriptor = 2;
 
-    while (1) {
-        if (isatty(STDIN_FILENO)) {
-            printf("($)");
-            fflush(stdout);
+    asm ("mov %1, %0\n\t"
+        "add $3, %0"
+        : "=r" (fileDescriptor)
+        : "r" (fileDescriptor));
+
+    if (argc == 2)
+    {
+        fileDescriptor = open(argv[1], O_RDONLY);
+        if (fileDescriptor == -1)
+        {
+            if (errno == EACCES)
+            {
+                fprintf(stderr, "Error: Permission denied to open %s\n", argv[1]);
+                exit(98);
+            }
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "%s: 0: Can't open %s\n", argv[0], argv[1]);
+                exit(98);
+            }
+            fprintf(stderr, "Error: Failed to open %s\n", argv[1]);
+            return EXIT_FAILURE;
         }
-
-        if (getline(&buffer, &bufsize, stdin) == -1) {
-            free(buffer);
-            exit(EXIT_SUCCESS);
-        }
-
-        buffer[strcspn(buffer, "\n")] = '\0';
-
-        if (strcmp(buffer, "exit") == 0) {
-            free(buffer);
-            exit(EXIT_SUCCESS);
-        
-
-        free(buffer);
+        shellInfo.readDescriptor = fileDescriptor;
     }
 
-    return 0;
+    populateShellEnvironmentList(&shellInfo);
+    readShellHistory(&shellInfo);
+    executeShell(&shellInfo, argv);
+
+    return EXIT_SUCCESS;
 }
 
