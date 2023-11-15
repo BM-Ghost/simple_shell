@@ -122,7 +122,7 @@ void findCommand(ShellInfo *info)
     }
     else
     {
-        if ((isShellInteractive(info) || getShellEnvironmentVariable(info, "PATH=") || info->argv[0][0] == '/') && findCommand(info)
+        if ((isShellInteractive(info) || getShellEnvironmentVariable(info, "PATH=") || info->argv[0][0] == '/') && findCommand(info)) 
             forkCommand(info);
         else if (*(info->arg) != '\n')
         {
@@ -131,6 +131,7 @@ void findCommand(ShellInfo *info)
         }
     }
 }
+
 
 /**
  * forkCommand - forks a an exec thread to run cmd
