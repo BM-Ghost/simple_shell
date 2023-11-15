@@ -70,14 +70,12 @@ int setShellEnvironmentVariable(ShellInfo *info)
         return 1;
     }
 
-    if (setenv(info->arg[1], info->arg[2], 1) != 0)
-    {
-        perror("setenv");
-        return 1;
-    }
+    if (setenv(ShellInfo->arg[1], ShellInfo->arg[2], 1) != 0)
+        return 0;
 
-    return 0;
+    return 1;
 }
+
 
 /**
  * unsetShellEnvironmentVariable - Remove an environment variable
