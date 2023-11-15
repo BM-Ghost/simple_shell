@@ -70,8 +70,8 @@ int findBuiltinCommand(ShellInfo *info)
         {"env", printShellEnvironment},
         {"help", printShellHelp},
         {"history", printShellHistory},
-        {"setenv", setShellEnvVar},
-        {"unsetenv", unsetShellEnvVar},
+        {"setenv", setShellEnvironmentVariable},
+        {"unsetenv", unsetShellEnvironmentVariable},
         {"cd", changeDir},
         {"alias", printShellAliases},
         {NULL, NULL}};

@@ -27,7 +27,7 @@
 #define USE_GETLINE 0
 #define USE_STRTOK 0
 
-#define HISTORY_FILE ".shell_history"
+#define HISTORY_FILE ".custom_shell_history"
 #define MAX_HISTORY_SIZE 4096
 
 extern char **environ;
@@ -41,12 +41,12 @@ typedef struct ListNode
 
 typedef struct CommandInfo
 {
-    char *arg;
-    char **argv;
+    char *argument;
+    char **arguments;
     char *path;
-    int argc;
+    int argumentCount;
     unsigned int lineCount;
-    int errNum;
+    int errorNumber;
     int lineCountFlag;
     char *fileName;
     List *environment;
@@ -59,7 +59,7 @@ typedef struct CommandInfo
     char **commandBuffer;
     int commandBufferType;
     int readDescriptor;
-    int histCount;
+    int historyCount;
 } ShellInfo;
 
 #define SHELL_INFO_INITIALIZER \
@@ -118,11 +118,8 @@ int unsetShellEnvironment(ShellInfo *info, char *environmentVariable);
 char **getShellEnvironment(ShellInfo *info);
 void handleSignalInterrupt(int signalNumber);
 int readShellLine(ShellInfo *info, char **bufferPointer, size_t *bufferLength);
-ssize_t readBufInfo(ShellInfo *info, char *buffer, size_t *buffer_size);
-ssize_t getInput(ShellInfo *info);
-ssize_t inputBuffer(ShellInfo *info, char **buffer, size_t *buffer_length);
-char *strncatCustom(char *dest, const char *src, size_t n);
-char *strncpyCustom(char *dest, const char *src, size_t n);
+char *_strncat(char *dest, const char *src, size_t n);
+char *strncpy(char *dest, const char *src, size_t n);
 void removeComments(char *buffer);
 char *convertNumber(long int num, int base, int flags);
 int printInteger(int input, int fileDescriptor);
@@ -147,7 +144,7 @@ int exitShell(ShellInfo *info);
 int stringToInt(char *s);
 int isAlphabeticCharacter(int c);
 int isChainDelimiter(ShellInfo *info, char *buffer, size_t *curPos);
-int isShellDelimiter(char character, char *delimiter);
+int isCustomDelimiter(char character, char *delimiter);
 int isShellInteractive(ShellInfo *info);
 char **splitStringByChar2(char *inputString, char delimiter);
 char **splitStringByString(char *inputString, char *delimiterString);
@@ -156,9 +153,9 @@ int compareCustomStrings(char *, char *);
 char *startWith(const char *, const char *);
 char *concatenateCustomStrings(char *dest, char *src);
 char *duplicateString(const char *string);
-void printString(char *);
+void printCustomString(char *);
 void copyMemory(void *newPointer, const void *pointer, unsigned int size);
-int putcharC(char);
+int putcharCustom(char);
 char *findCharacter(char *, char);
 int bfreeMemory(void **ptr);
 int freeMemoryPointer(void **ptr);
