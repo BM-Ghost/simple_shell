@@ -14,25 +14,25 @@ int executeShell(ShellInfo *info, char **av)
 
     while (readStatus != -1 && builtinRet != -2)
     {
-        clearShellInfo(info);
+        initializeShellInfo(info);
 
-        if (isInteractive(info))
-            printToDescriptor("$ ");
+        if (isShellInteractive(info))
+            printString("$ ");
 
-        putToDescriptor(BUF_FLUSH);
+        errorPutchar(BUFFER_FLUSH);
 
         readStatus = getInput(info);
 
         if (readStatus != -1)
         {
             setShellInfo(info, av);
-            builtinRet = findShellBuiltin(info);
+            builtinRet = findBuiltinCommand(info);
 
             if (builtinRet == -1)
-                findShellCommand(info);
+                findCommand(info);
         }
-        else if (isInteractive(info))
-            putToDescriptor('\n');
+        else if (isShellInteractive(info))
+            errorPutchar('\n');
 
         freeShellInfo(info, 0);
     }
@@ -40,7 +40,7 @@ int executeShell(ShellInfo *info, char **av)
     writeShellHistory(info);
     freeShellInfo(info, 1);
 
-    if (!isInteractive(info) && info->status)
+    if (!isShellInteractive(info) && info->status)
         exit(info->status);
 
     if (builtinRet == -2)
@@ -54,7 +54,7 @@ int executeShell(ShellInfo *info, char **av)
 }
 
 /**
- * findShellBuiltin - finds a builtin command
+ * findBuiltinCommand - finds a builtin command
  * @info: the parameter & return info struct
  *
  * Return: -1 if builtin not found,
@@ -62,25 +62,25 @@ int executeShell(ShellInfo *info, char **av)
  * 1 if builtin found but not successful,
  * -2 if builtin signals exit()
  */
-int findShellBuiltin(ShellInfo *info)
+int findBuiltinCommand(ShellInfo *info)
 {
     int i, builtinRet = -1;
-    ShellBuiltinTable shellBuiltinTbl[] = {
+    BuiltinCommandTable shellBuiltinTbl[] = {
         {"exit", exitShell},
         {"env", printShellEnvironment},
         {"help", printShellHelp},
         {"history", printShellHistory},
         {"setenv", setShellEnvVar},
         {"unsetenv", unsetShellEnvVar},
-        {"cd", changeShellDir},
+        {"cd", changeDir},
         {"alias", printShellAliases},
         {NULL, NULL}};
 
-    for (i = 0; shellBuiltinTbl[i].type; i++)
-        if (compareStrings(info->argv[0], shellBuiltinTbl[i].type) == 0)
+    for (i = 0; shellBuiltinTbl[i].name; i++)
+        if (compareStrings(info->argv[0], shellBuiltinTbl[i].name) == 0)
         {
             info->lineCount++;
-            builtinRet = shellBuiltinTbl[i].func(info);
+            builtinRet = shellBuiltinTbl[i].function(info);
             break;
         }
 
@@ -93,7 +93,7 @@ int findShellBuiltin(ShellInfo *info)
  *
  * Return: void
  */
-void findShellCommand(ShellInfo *info)
+void findCommand(ShellInfo *info)
 {
     char *path = NULL;
     int i, numArgs = 0;
@@ -113,32 +113,32 @@ void findShellCommand(ShellInfo *info)
     if (!numArgs)
         return;
 
-    path = findShellPath(info, getShellEnvVar(info, "PATH="), info->argv[0]);
+    path = findCommandPath(info, getShellEnvironmentVariable(info, "PATH="), info->argv[0]);
 
     if (path)
     {
         info->path = path;
-        forkShellCommand(info);
+        forkCommand(info);
     }
     else
     {
-        if ((isInteractive(info) || getShellEnvVar(info, "PATH=") || info->argv[0][0] == '/') && findShellCommand(info, info->argv[0]))
-            forkShellCommand(info);
+        if ((isShellInteractive(info) || getShellEnvironmentVariable(info, "PATH=") || info->argv[0][0] == '/') && findCommand(info, info->argv[0]))
+            forkCommand(info);
         else if (*(info->arg) != '\n')
         {
             info->status = 150;
-            printShellError(info, "No Command\n");
+            printError(info, "No Command\n");
         }
     }
 }
 
 /**
- * forkShellCommand - forks a an exec thread to run cmd
+ * forkCommand - forks a an exec thread to run cmd
  * @info: the parameter & return info struct
  *
  * Return: void
  */
-void forkShellCommand(ShellInfo *info)
+void forkCommand(ShellInfo *info)
 {
     pid_t childPid;
 
@@ -146,7 +146,7 @@ void forkShellCommand(ShellInfo *info)
 
     if (childPid == -1)
     {
-        printShellError(info, "Fatal Error:");
+        printError(info, "Fatal Error:");
         return;
     }
 
@@ -171,8 +171,7 @@ void forkShellCommand(ShellInfo *info)
             info->status = WEXITSTATUS(info->status);
 
             if (info->status == 150)
-                printShellError(info, "Permission denied\n");
+                printError(info, "Permission denied\n");
         }
     }
 }
-

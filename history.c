@@ -7,10 +7,11 @@
 
 /**
  * getShellHistoryFile - gets the history file
- * @info: parameter struct
+ *  * @info: parameter struct
  *
  * Return: allocated string containing history file
  */
+
 char *getShellHistoryFile(ShellInfo *info)
 {
     char *buffer, *homeDirectory;
@@ -20,17 +21,23 @@ char *getShellHistoryFile(ShellInfo *info)
     if (!homeDirectory)
         return NULL;
 
-    buffer = malloc(sizeof(char) * (stringLength(homeDirectory) + stringLength(HIST_FILE) + 2));
+    buffer = malloc(sizeof(char) * (stringLength(homeDirectory) + stringLength(HISTORY_FILE) + 2));
     if (!buffer)
+    {
+        free(homeDirectory);  
         return NULL;
+    }
 
     buffer[0] = 0;
-    _strncpy(buffer, homeDirectory);
-    _strcat(buffer, "/");
-    _strcat(buffer, HIST_FILE);
+    strncpy(buffer, homeDirectory, stringLength(homeDirectory));
+    strcat(buffer, "/");
+    strcat(buffer, HISTORY_FILE);
+
+    free(homeDirectory);  
 
     return buffer;
 }
+
 
 /**
  * writeShellHistory - creates a file, or appends to an existing file
@@ -59,7 +66,7 @@ int writeShellHistory(ShellInfo *info)
         putToDescriptor('\n', fileDescriptor);
     }
 
-    putToDescriptor(BUF_FLUSH, fileDescriptor);
+    putToDescriptor(BUFFER_FLUSH, fileDescriptor);
     close(fileDescriptor);
 
     return 1;
@@ -119,7 +126,7 @@ int readShellHistory(ShellInfo *info)
     free(buffer);
     info->histCount = lineCount;
 
-    while (info->histCount-- >= HIST_MAX)
+    while (info->histCount-- >= MAX_HISTORY_SIZE)
         deleteNodeAtIndex(&(info->history), 0);
 
     renumberShellHistory(info);
@@ -163,7 +170,7 @@ int renumberShellHistory(ShellInfo *info)
 
     while (node)
     {
-        node->num = i++;
+        node->number = i++;
         node = node->next;
     }
 
