@@ -70,9 +70,13 @@ int setShellEnvironmentVariable(ShellInfo *info)
         return 1;
     }
 
-    if (setenv(ShellInfo, info->arg[1], info->arg[2]))
-        return 0;
-    return 1;
+    if (setenv(info->arg[1], info->arg[2], 1) != 0)
+    {
+        perror("setenv");
+        return 1;
+    }
+
+    return 0;
 }
 
 /**
@@ -96,11 +100,18 @@ int unsetShellEnvironmentVariable(ShellInfo *info)
         return 1;
     }
 
-    for (i = 1; i <= info->argc; i++)
-        unsetenv(ShellInfo, info->argv[i]);
+    for (i = 1; i < info->argc; i++)
+    {
+        if (unsetenv(info->argv[i]) != 0)
+        {
+            perror("unsetenv");
+            return 1;
+        }
+    }
 
     return 0;
 }
+
 
 /**
  * populateShellEnvironmentList - populates environment linked list
