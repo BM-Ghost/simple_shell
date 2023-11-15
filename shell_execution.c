@@ -122,7 +122,7 @@ void findCommand(ShellInfo *info)
     }
     else
     {
-        if ((isShellInteractive(info) || getShellEnvironmentVariable(info, "PATH=") || info->argv[0][0] == '/') && findCommand(info)) 
+        if ((isShellInteractive(info) || getShellEnvironmentVariable(info, "PATH=") || info->argv[0][0] == '/') && findCommand(info, info->argv[0])) 
             forkCommand(info);
         else if (*(info->arg) != '\n')
         {
