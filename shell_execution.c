@@ -7,7 +7,7 @@
  *
  * Return: 0 on success, 1 on error, or error code
  */
-int executeShell(ShellInfo *info, char **av)
+int runShell(ShellInfo *info, char **av)
 {
     ssize_t readStatus = 0;
     int builtinRet = 0;
