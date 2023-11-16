@@ -63,4 +63,3 @@ This shell implementation serves as a basic command line interpreter. Its functi
 
 ---
 
-This project README outlines the requirements, goals, and evolution of a Unix command line interpreter developed by Meshack Bwire and Claudia (Chelsea) Ageha.
