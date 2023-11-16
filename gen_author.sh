@@ -7,7 +7,7 @@ cd "$(git rev-parse --show-toplevel)"
 {
     cat <<'EOH'
         # This file lists all individuals having contributed content to the repository.
-        # For how it is generated, see `hack/generate-authors.sh`.
+        # For how it is generated, see `simple_shell/gen-author.sh`.
 EOH
     echo
     git log --format='%aN <%aE>' | LC_ALL=C.UTF-8 sort -uf
