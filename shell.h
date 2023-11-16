@@ -69,7 +69,7 @@ typedef struct CommandInfo
 
 typedef struct BuiltinCommand
 {
-    const char *name;
+    char *name;
     int (*function)(ShellInfo *);
 } BuiltinCommandTable;
 
@@ -114,8 +114,8 @@ char *getShellHistoryFile(ShellInfo *info);
 void freeShellInfo(ShellInfo *info, int all);
 void setShellInfo(ShellInfo *info, char **arguments);
 void initializeShellInfo(ShellInfo *info);
-int setEnvironmentVariable(ShellInfo *info, char *variable, char *value);
-int unsetShellEnvironment(ShellInfo *info, char *environmentVariable);
+int setEnvironmentVariable(char *info, char *variable, char *value);
+int unsetShellEnvironment(char *info, char *environmentVariable);
 char **getShellEnvironment(ShellInfo *info);
 void handleSignalInterrupt(int signalNumber);
 int readShellLine(ShellInfo *info, char **bufferPointer, size_t *bufferLength);
