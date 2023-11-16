@@ -12,156 +12,195 @@
 #include <fcntl.h>
 #include <errno.h>
 
+/* for read/write buffers */
 #define READ_BUFFER_SIZE 1024
 #define WRITE_BUFFER_SIZE 1024
-#define BUFFER_FLUSH -1
+#define BUFFER_FLUSH '\0'
 
-#define NORMAL_COMMAND 0
-#define OR_COMMAND 1
-#define AND_COMMAND 2
-#define CHAIN_COMMAND 3
+/* for command chaining */
+#define NORM	0
+#define SH_OR		1
+#define SH_AND		2
+#define SH_CHAIN	3
 
+/* for convertNum() */
+#define CONVERT_LOWERCASE	1
+#define CONVERT_UNSIGNED	2
 
-#define CONVERT_LOWERCASE 1
-#define CONVERT_UNSIGNED 2
+/* 1 if using system getline() */
+#define _GETLINE 0
+#define STRTOK_ON 0
 
-#define USE_GETLINE 0
-#define USE_STRTOK 0
+#define HISTORY_FILE	".simple_shell_history"
+#define MAX_HISTORY	4096
 
-#define HISTORY_FILE ".shell_history"
-#define MAX_HISTORY_SIZE 4096
+extern char **env;
 
-extern char **environ;
-
-typedef struct ListNode
+/**
+ * struct StringNode - singly linked list
+ * @num: the number field
+ * @str: a string
+ * @next: points to the next node
+ */
+typedef struct StringNode
 {
-    int number;
-    char *data;
-    struct ListNode *next;
-} List;
+	int num;
+	char *str;
+	struct StringNode *next;
+} StringList;
 
-typedef struct CommandInfo
+/**
+ *struct FuncArgs - contains pseudo-arguements to pass into a function,
+ *		allowing uniform prototype for function pointer struct
+ *@args: a string generated from getline containing arguements
+ *@argv: an array of strings generated from args
+ *@path: a string path for the current command
+ *@argc: the argument count
+ *@line_cnt: the error count
+ *@err_code: the error code for exit()s
+ *@line_cnt_flag: if on count this line of input
+ *@fname: the program filename
+ *@env: linked list local copy of environ
+ *@environ: custom modified copy of environ from LL env
+ *@history: the history node
+ *@alias: the alias node
+ *@changedEnv: on if environ was changed
+ *@status: the return status of the last exec'd command
+ *@chainBuf: address of pointer to chainBuf, on if chaining
+ *@chainBufType: CMD_type ||, &&, ;
+ *@readfd: the fd from which to read line input
+ *@historycount: the history line number count
+ */
+
+typedef struct FuncArgs
 {
-    char *arg;
-    char **argv;
-    char *path;
-    int argc;
-    unsigned int lineCount;
-    int errNum;
-    int lineCountFlag;
-    char *fileName;
-    List *environment;
-    List *history;
-    List *alias;
-    char **customEnvironment;
-    int environmentChanged;
-    int status;
+	char *args;
+	char **argv;
+	char *path;
+	int argc;
+	unsigned int line_cnt;
+	int err_code;
+	int line_cnt_flag;
+	char *fname;
+	StringList *mode_env;
+	StringList *history;
+	StringList *alias;
+	char **env;
+	int changedEnv;
+	int status;
+	char **chainBuf; /* pointer to cmd ; chain buffer, for memory mangement */
+	int chainBufType; /* CMD_type ||, &&, ; */
+	int readfd;
+	int historycount;
+} FuncInfo;
 
-    char **commandBuffer;
-    int commandBufferType;
-    int readDescriptor;
-    int histCount;
-} ShellInfo;
+#define INFO_INIT \
+{NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, \
+	0, 0, 0}
 
-#define SHELL_INFO_INITIALIZER \
-    {NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, \
-     0, 0, 0}
-
-typedef struct BuiltinCommand
+/**
+ *struct BuiltInCmd - contains a BuiltInCmd string and related function
+ *@cmd_type: the BuiltInCmd command flag
+ *@command_func: the function
+ */
+typedef struct BuiltInCmd
 {
-    char *name;
-    int (*function)(ShellInfo *);
-} BuiltinCommandTable;
+	char *cmd_type;
+	int (*command_func)(FuncInfo *);
+} BuiltInCommand;
 
-int isShellInteractive(ShellInfo *info);
-int replaceString(char **, char *);
-int replaceVariables(ShellInfo *info);
-int replaceAliases(ShellInfo *);
-void checkCommandChainStatus(ShellInfo *info, char *buffer, size_t *currentPosition, size_t startPosition, size_t bufferLength);
-int isCommandChainDelimiter(ShellInfo *info, char *buffer, size_t *currentPosition);
-char **splitString(char *, char *);
-char **splitStringByChar(char *, char);
-char *copyString(char *dest, char *src);
-int printCharacter(char c);
-void printString(char *str);
-char *concatenateStrings(char *dest, char *src);
+int isInteractive(FuncInfo *info);
+int replaceStr(char **, char *);
+int replaceVariables(FuncInfo *info);
+int replaceAlias(FuncInfo *);
+void checkChainStatus(FuncInfo *info, char *buf, size_t *current_position, size_t start_position, size_t buffer_length);
+int isChainDelimiter(FuncInfo *info, char *buf, size_t *current_position);
+char **strtow(char *, char *);
+char **_strtow(char *, char);
+char *strcpy(char *dest, char *src);
+int putchar(char c);
+void putstr(char *str);
+char *cntstr(char *dest, char *src);
 char *startsWith(const char *haystack, const char *needle);
-int compareStrings(char *str1, char *str2);
-int getStringLength(char *str);
-void forkCommand(ShellInfo *info);
-void findCommand(ShellInfo *info);
-int findBuiltinCommand(ShellInfo *info);
-int executeShell(ShellInfo *info, char **arguments);
-void *reallocMemory(void *ptr, unsigned int oldSize, unsigned int newSize);
-void freeStringArray(char **strArray);
-char *findCommandPath(ShellInfo *info, char *pathString, char *command);
-char *duplicateCharacters(char *pathString, int startIndex, int stopIndex);
-int isExecutableCommand(ShellInfo *info, char *filePath);
-int freeMemory(void **ptr);
-List *nodeStartsWith(List *node, char *prefix, char c);
-size_t printList(const List *head);
-char **listToStrings(List *head);
-void freeList(List **headPointer);
-int deleteNodeAtIndex(List **head, unsigned int index);
-size_t printListString(const List *head);
-List *addNodeEnd(List **head, const char *str, int num);
-List *addNode(List **head, const char *str, int num);
-int renumberShellHistory(ShellInfo *info);
-int buildShellHistoryList(ShellInfo *info, char *buffer, int lineCount);
-int readShellHistory(ShellInfo *info);
-int writeShellHistory(ShellInfo *info);
-char *getShellHistoryFile(ShellInfo *info);
-void freeShellInfo(ShellInfo *info, int all);
-void setShellInfo(ShellInfo *info, char **arguments);
-void initializeShellInfo(ShellInfo *info);
-int setEnvironmentVariable(char *info, char *variable, char *value);
-int unsetShellEnvironment(char *info, char *environmentVariable);
-char **getShellEnvironment(ShellInfo *info);
-void handleSignalInterrupt(int signalNumber);
-int readShellLine(ShellInfo *info, char **bufferPointer, size_t *bufferLength);
-ssize_t readBufInfo(ShellInfo *info, char *buffer, size_t *buffer_size);
-ssize_t getInput(ShellInfo *info);
-ssize_t inputBuffer(ShellInfo *info, char **buffer, size_t *buffer_length);
-char *strncatCustom(char *dest, const char *src, size_t n);
-char *strncpyCustom(char *dest, const char *src, size_t n);
-void removeComments(char *buffer);
-char *convertNumber(long int num, int base, int flags);
-int printInteger(int input, int fileDescriptor);
-void printError(ShellInfo *info, char *errorMessage);
-int errorAtoi(char *string);
-int printToDescriptor(char *str, int fileDescriptor);
-int putToDescriptor(char character, int fileDescriptor);
-int errorPutchar(char character);
-void errorPuts(char *str);
-int populateShellEnvironmentList(ShellInfo *info);
-int unsetShellEnvironmentVariable(ShellInfo *info);
-int setShellEnvironmentVariable(ShellInfo *info);
-char *getShellEnvironmentVariable(ShellInfo *info, const char *name);
-int printShellEnvironment(ShellInfo *info);
-int printShellAliases(ShellInfo *info);
-int printAlias(List *node);
-int printShellHistory(ShellInfo *info);
-void chainStatus(ShellInfo *info, char *bug, size_t *curPos, size_t istPos, size_t bufLen);
-int printShellHelp(ShellInfo *info);
-int changeDir(ShellInfo *info);
-int exitShell(ShellInfo *info);
-int stringToInt(char *s);
-int isAlphabeticCharacter(int c);
-int isChainDelimiter(ShellInfo *info, char *buffer, size_t *curPos);
-int isShellDelimiter(char character, char *delimiter);
-int isShellInteractive(ShellInfo *info);
-char **splitStringByChar2(char *inputString, char delimiter);
-char **splitStringByString(char *inputString, char *delimiterString);
-int stringLength(const char *string);
-int compareCustomStrings(char *, char *);
-char *startWith(const char *, const char *);
-char *concatenateCustomStrings(char *dest, char *src);
-char *duplicateString(const char *string);
-void printString(char *);
-void copyMemory(void *newPointer, const void *pointer, unsigned int size);
-int putcharC(char);
-char *findCharacter(char *, char);
-int bfreeMemory(void **ptr);
-int freeMemoryPointer(void **ptr);
-char duplicateMemory(void **);
+int compStr(char *str1, char *str2);
+int getStrLn(char *str);
+void forkCommand(FuncInfo *info);
+void findCommand(FuncInfo *info);
+int findBuiltIn(FuncInfo *info);
+int hshFunc(FuncInfo *info, char **av);
+void *resizeMem(void *ptr, unsigned int old_size, unsigned int new_size);
+void freeStringArray(char **str_arr);
+char *findPath(FuncInfo *info, char *path_str, char *cmd);
+char *copyChars(char *path_str, int start_index, int stop_index);
+int isExecutable(FuncInfo *info, char *file_path);
+int freePtr(void **ptr);
+ssize_t getNodeIndex(StringList *head, StringList *node);
+StringList *nodeStartsWith(StringList *node, char *prefix, char c);
+size_t printList(const StringList *head);
+char **stringListToStrings(StringList *head);
+void freeList(StringList **head_ptr);
+int deleteNodeAtIndex(StringList **head, unsigned int index);
+size_t printListStr(const StringList *head);
+StringList *addNodeEnd(StringList **head, const char *str, int num);
+StringList *addNode(StringList **head, const char *str, int num);
+int renumberHistory(FuncInfo *info);
+int buildHistory(FuncInfo *info, char *buf, int line_cnt);
+int readHistory(FuncInfo *info);
+int writeHistory(FuncInfo *info);
+char *getHistoryFile(FuncInfo *info);
+void freeInfo(FuncInfo *info, int all);
+void setInfo(FuncInfo *info, char **av);
+void initializeInfo(FuncInfo *info);
+int setEnvVar(FuncInfo *info, char *variable, char *value);
+int unsetEnv(FuncInfo *info, char *env_var);
+char **getEnv(FuncInfo *info);
+void handleSigint(int signal_number);
+int getLine(FuncInfo *info, char **buffer_ptr, size_t *buffer_length);
+ssize_t readBuf(FuncInfo *info, char *buffer, size_t *buffer_size);
+ssize_t getInput(FuncInfo *info);
+ssize_t inputBuf(FuncInfo *info, char **buffer, size_t *buffer_length);
+char *strncat(char *dest, const char *src, size_t n);
+char *strncpy(char *dest, const char *src, size_t n);
+void removeComments(char *buf);
+char *convertNum(long int num, int base, int flags);
+int printD(int input, int fd);
+void printErr(FuncInfo *info, char *estr);
+int _errAtoi(char *s);
+int _putsFd(char *str, int fd);
+int _putFd(char c, int fd);
+int _eputChar(char c);
+void _ePuts(char *str);
+int populateEnvList(FuncInfo *info);
+int unsetEnvVar(FuncInfo *info);
+int setEnvVar(FuncInfo *info);
+char *getEnvVar(FuncInfo *info, const char *name);
+int printEnv(FuncInfo *info);
+int printAliases(FuncInfo *info);
+int printAlias(StringList *node);
+int setAlias(FuncInfo *info, char *alias_str);
+int unsetAlias(FuncInfo *info, char *alias_str);
+int printHistory(FuncInfo *info);
+void chainStat(FuncInfo *info, char *bug, size_t *cur_pos, size_t ist_pos, size_t buf_len);
+int printHelp(FuncInfo *info);
+int changeDir(FuncInfo *info);
+int exitShell(FuncInfo *info);
+int strToInt(char *s);
+int isAlphabetic(int c);
+int isChainDel(FuncInfo *info, char *buf, size_t *cur_pos);
+int isDelimiter(char c, char *delim);
+int isInteractive(FuncInfo *info);
+char **_strtow(char *input_str, char del);
+char **strtow(char *input_str, char *del_s);
+int strLen(const char *string);
+int _strcmp(char *, char *);
+char *startsWith(const char *, const char *);
+char *strConcat(char *dest, char *src);
+char *strDuplicate(const char *string);
+void customPuts(char *);
+void _memcpy(void *newptr, const void *ptr, unsigned int size);
+int putchar(char);
+char *_strchr(char *, char);
+int bfree(void **ptr);
+int freePtr(void **ptr);
+char strDup(void **);
 #endif

@@ -1,48 +1,40 @@
 #include "shell.h"
 
 /**
- * printShellEnvironment - prints the current environment
- * @info: Structure containing potential arguments.
- * Return: Always 0
+ * printEnv - Display the current environment
+ * @info: Structure containing potential arguments. Used to maintain
+ *        constant function prototype.
+ * Return: 0 on success, 1 on error
  */
-int printShellEnvironment(ShellInfo *info)
-{
-    if (info == NULL)
-    {
+int printEnv(FuncInfo *info) {
+    if (!info) {
         fprintf(stderr, "Error: info is NULL\n");
         return 1;
     }
-    printListString(info->environment);
+    printListStr(info->env);
     return 0;
 }
 
 /**
- * getShellEnvironmentVariable - gets the value of an environment variable
- * @info: Structure containing potential arguments.
- * @name: environment variable name
- *
- * Return: the value
+ * getEnvVar - Retrieve the value of an environment variable
+ * @info: Structure containing potential arguments. Used to maintain
+ *        constant function prototype.
+ * @name: Name of the environment variable
+ * Return: The value of the variable, NULL if not found or on error
  */
-char *getShellEnvironmentVariable(ShellInfo *info, const char *name)
-{
-    List *node = info->environment;
-    char *p;
-
-    if (info == NULL)
-    {
+char *getEnvVar(FuncInfo *info, const char *name) {
+    if (!info) {
         fprintf(stderr, "Error: info is NULL\n");
         return NULL;
     }
-
-    if (name == NULL)
-    {
+    if (!name) {
         fprintf(stderr, "Error: name is NULL\n");
         return NULL;
     }
-
-    while (node)
-    {
-        p = startWith(node->data, name);
+    StringList *node = info->env;
+    char *p;
+    while (node) {
+        p = startsWith(node->str, name);
         if (p && *p)
             return p;
         node = node->next;
@@ -51,86 +43,71 @@ char *getShellEnvironmentVariable(ShellInfo *info, const char *name)
 }
 
 /**
- * setShellEnvironmentVariable - Initialize a new environment variable,
- *             or modify an existing one
- * @info: Structure containing potential arguments.
+ * setEnvVar - Initialize a new environment variable or modify an existing one
+ * @info: Structure containing potential arguments. Used to maintain
+ *        constant function prototype.
  * Return: 0 on success, 1 on failure
  */
-int setShellEnvironmentVariable(ShellInfo *info)
-{
-    if (info == NULL)
-    {
+int setEnvVar(FuncInfo *info) {
+    if (!info) {
         fprintf(stderr, "Error: info is NULL\n");
         return 1;
     }
-
-    if (info->argc != 3)
-    {
-        errorPuts("Incorrect number of arguments\n");
+    if (info->argc != 3) {
+        _ePuts("Incorrect number of arguments\n");
         return 1;
     }
-
-    if (setenv(info->arg[1], info->arg[2], 1) != 0)
+    if (_setenv(info, info->argv[1], info->argv[2]))
         return 0;
-
     return 1;
 }
 
+/**
+ * unsetEnvVar - Remove an environment variable
+ * @info: Structure containing potential arguments. Used to maintain
+ *        constant function prototype.
+ *  Return: 0 on success, 1 on failure
+ */
+int unsetEnvVar(FuncInfo *info)
+{
+	int i;
+
+	if (info == NULL)
+	{
+		fprintf(stderr, "Error: info is NULL\n");
+		return (1);
+	}
+
+	if (info->argc == 1)
+	{
+		_ePuts("Too few arguements.\n");
+		return (1);
+	}
+	for (i = 1; i <= info->argc; i++)
+		_unsetenv(info, info->argv[i]);
+
+	return (0);
+}
 
 /**
- * unsetShellEnvironmentVariable - Remove an environment variable
- * @info: Structure containing potential arguments.
+ * populateEnvList - Populates the env linked list from the current environment variables.
+ * @info: Structure containing potential arguments. Used to maintain constant function prototype.
  * Return: 0 on success, 1 on failure
  */
-int unsetShellEnvironmentVariable(ShellInfo *info)
-{
-    int i;
+int populateEnvList(FuncInfo *info) {
+    StringList *node = NULL;
+    size_t i = 0;
 
-    if (info == NULL)
-    {
+	if (!info) {
         fprintf(stderr, "Error: info is NULL\n");
         return 1;
     }
-
-    if (info->argc == 1)
-    {
-        errorPuts("Too few arguments.\n");
-        return 1;
-    }
-
-    for (i = 1; i < info->argc; i++)
-    {
-        if (unsetenv(info->argv[i]) != 0)
-        {
-            perror("unsetenv");
+    for (i = 0; environ[i]; i++) {
+        if (addNodeEnd(&node, environ[i], 0) == NULL) {
+            free_list(&node); 
             return 1;
         }
     }
-
+    info->env = node;
     return 0;
 }
-
-
-/**
- * populateShellEnvironmentList - populates environment linked list
- * @info: Structure containing potential arguments.
- * Return: 0 on success, 1 on failure
- */
-int populateShellEnvironmentList(ShellInfo *info)
-{
-    List *node = NULL;
-    size_t i;
-
-    if (info == NULL)
-    {
-        fprintf(stderr, "Error: info is NULL\n");
-        return 1;
-    }
-
-    for (i = 0; environ[i]; i++)
-        addNodeEnd(&node, environ[i], 0);
-
-    info->environment = node;
-    return 0;
-}
-

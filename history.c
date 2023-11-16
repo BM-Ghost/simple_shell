@@ -6,150 +6,132 @@
 #include <unistd.h>
 
 /**
- * getShellHistoryFile - gets the history file
- *  * @info: parameter struct
+ * getHistoryFile - Retrieves the path of the history file
+ * @info: Parameter struct containing shell information
  *
- * Return: allocated string containing history file
+ * Return: Allocated string containing the history file path
  */
+char *getHistoryFile(FuncInfo *info) {
+    char *buf, *home_dir;
 
-char *getShellHistoryFile(ShellInfo *info)
-{
-    char *buffer, *homeDirectory;
-
-    homeDirectory = getShellEnvironmentVariable(info, "HOME=");
-
-    if (!homeDirectory)
+    home_dir = getEnvVar(info, "HOME=");
+    if (!home_dir)
         return NULL;
-
-    buffer = malloc(sizeof(char) * (stringLength(homeDirectory) + stringLength(HISTORY_FILE) + 2));
-    if (!buffer)
-    {
-        free(homeDirectory);  
+    buf = malloc(sizeof(char) * (strLen(home_dir) + strLen(HISTORY_FILE) + 2));
+    if (!buf)
         return NULL;
-    }
+    buf[0] = 0;
+    strncpy(buf, home_dir);
+    _strcat(buf, "/");
+    _strcat(buf, HISTORY_FILE);
 
-    buffer[0] = 0;
-    strncpy(buffer, homeDirectory, stringLength(homeDirectory));
-    strcat(buffer, "/");
-    strcat(buffer, HISTORY_FILE);
-
-    free(homeDirectory);  
-
-    return buffer;
+    return buf;
 }
 
-
 /**
- * writeShellHistory - creates a file, or appends to an existing file
- * @info: the parameter struct
+ * writeHistory - Writes the shell history to a file
+ * @info: Parameter struct containing shell information
  *
- * Return: 1 on success, else -1
+ * Return: 1 on success, -1 on failure
  */
-int writeShellHistory(ShellInfo *info)
-{
-    ssize_t fileDescriptor;
-    char *fileName = getShellHistoryFile(info);
-    List *node = NULL;
+int writeHistory(FuncInfo *info) {
+    ssize_t file_descriptor;
+    char *file_name = getHistoryFile(info);
+    StringList *node = NULL;
 
-    if (!fileName)
+    if (!file_name)
         return -1;
 
-    fileDescriptor = open(fileName, O_CREAT | O_TRUNC | O_RDWR, 0644);
-    free(fileName);
+    file_descriptor = open(file_name, O_CREAT | O_TRUNC | O_RDWR, 0644);
+    free(file_name);
 
-    if (fileDescriptor == -1)
+    if (file_descriptor == -1)
         return -1;
-
-    for (node = info->history; node; node = node->next)
-    {
-        printToDescriptor(node->data, fileDescriptor);
-        putToDescriptor('\n', fileDescriptor);
+    for (node = info->history; node; node = node->next) {
+        _putsFd(node->str, file_descriptor);
+        _putFd('\n', file_descriptor);
     }
-
-    putToDescriptor(BUFFER_FLUSH, fileDescriptor);
-    close(fileDescriptor);
+    _putFd(BUFFER_FLUSH, file_descriptor);
+    close(file_descriptor);
 
     return 1;
 }
 
 /**
- * readShellHistory - reads history from file
- * @info: the parameter struct
+ * readHistory - Reads shell history from a file
+ * @info: Parameter struct containing shell information
  *
- * Return: histcount on success, 0 otherwise
+ * Return: Number of lines read from history file on success, 0 on failure
  */
-int readShellHistory(ShellInfo *info)
-{
-    int i, lastIndex = 0, lineCount = 0;
-    ssize_t fileDescriptor, readLength, fileSize = 0;
-    struct stat fileStat;
-    char *buffer = NULL, *fileName = getShellHistoryFile(info);
+int readHistory(FuncInfo *info) {
+    int i, last_index = 0, line_cnt = 0;
+    ssize_t file_descriptor, read_length, file_size = 0;
+    struct stat file_stat;
+    char *buffer = NULL, *file_name = getHistoryFile(info);
 
-    if (!fileName)
+    if (!file_name)
         return 0;
 
-    fileDescriptor = open(fileName, O_RDONLY);
-    free(fileName);
+    file_descriptor = open(file_name, O_RDONLY);
+    free(file_name);
 
-    if (fileDescriptor == -1)
+    if (file_descriptor == -1)
         return 0;
 
-    if (!fstat(fileDescriptor, &fileStat))
-        fileSize = fileStat.st_size;
+    if (!fstat(file_descriptor, &file_stat))
+        file_size = file_stat.st_size;
 
-    if (fileSize < 2)
+    if (file_size < 2)
         return 0;
 
-    buffer = malloc(sizeof(char) * (fileSize + 1));
+    buffer = malloc(sizeof(char) * (file_size + 1));
     if (!buffer)
         return 0;
 
-    readLength = read(fileDescriptor, buffer, fileSize);
-    buffer[fileSize] = 0;
+    read_length = read(file_descriptor, buffer, file_size);
+    buffer[file_size] = 0;
 
-    if (readLength <= 0)
+    if (read_length <= 0)
         return free(buffer), 0;
 
-    close(fileDescriptor);
+    close(file_descriptor);
 
-    for (i = 0; i < fileSize; i++)
-        if (buffer[i] == '\n')
-        {
+    for (i = 0; i < file_size; i++)
+        if (buffer[i] == '\n') {
             buffer[i] = 0;
-            buildShellHistoryList(info, buffer + lastIndex, lineCount++);
-            lastIndex = i + 1;
+            buildHistory(info, buffer + last_index, line_cnt++);
+            last_index = i + 1;
         }
 
-    if (lastIndex != i)
-        buildShellHistoryList(info, buffer + lastIndex, lineCount++);
+    if (last_index != i)
+        buildHistory(info, buffer + last_index, line_cnt++);
 
     free(buffer);
-    info->histCount = lineCount;
+    info->historycount = line_cnt;
 
-    while (info->histCount-- >= MAX_HISTORY_SIZE)
+    while (info->historycount-- >= MAX_HISTORY)
         deleteNodeAtIndex(&(info->history), 0);
 
-    renumberShellHistory(info);
+    renumberHistory(info);
 
-    return info->histCount;
+    return info->historycount;
 }
 
 /**
- * buildShellHistoryList - adds entry to a history linked list
- * @info: Structure containing potential arguments.
- * @buf: buffer
- * @lineCount: the history line count, histCount
+ * buildHistory - Adds an entry to the shell's history linked list
+ * @info: Structure containing shell information and history
+ * @buf: Buffer containing the command to be added to history
+ * @line_cnt: Current history line count
  *
- * Return: Always 0
+ * Return: Always returns 0
  */
-int buildShellHistoryList(ShellInfo *info, char *buf, int lineCount)
-{
-    List *node = NULL;
+int buildHistory(FuncInfo *info, char *buf, int line_cnt) {
+    StringList *node = NULL;
 
     if (info->history)
         node = info->history;
 
-    addNodeEnd(&node, buf, lineCount);
+    addNodeEnd(&node, buf, line_cnt);
 
     if (!info->history)
         info->history = node;
@@ -158,21 +140,21 @@ int buildShellHistoryList(ShellInfo *info, char *buf, int lineCount)
 }
 
 /**
- * renumberShellHistory - renumbers the history linked list after changes
- * @info: Structure containing potential arguments.
+ * renumberHistory - Updates the sequence numbers of the history entries
+ * @info: Structure containing shell information and history
  *
- * Return: the new histCount
+ * Return: The updated history count
  */
-int renumberShellHistory(ShellInfo *info)
-{
-    List *node = info->history;
+int renumberHistory(FuncInfo *info) {
+    StringList *node = info->history;
     int i = 0;
 
-    while (node)
-    {
-        node->number = i++;
+    while (node) {
+        node->num = i++;
         node = node->next;
     }
 
-    return (info->histCount = i);
+    return (info->historycount = i);
 }
+
+
