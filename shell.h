@@ -69,7 +69,7 @@ typedef struct CommandInfo
 
 typedef struct BuiltinCommand
 {
-    char *name;
+    const char *name;
     int (*function)(ShellInfo *);
 } BuiltinCommandTable;
 
