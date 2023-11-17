@@ -8,7 +8,7 @@
  * Return: Always returns 0
  */
 
-int exit(char **av, char *input, int *exiti)
+int exit_cmd(char **av, char *input, int *exiti)
 {
 int exit_show;
 exit_show = 0;
@@ -26,7 +26,7 @@ exit(*exiti);
 
 if (av[1] == NULL)
 {
-fprintf(stderr, "exit: There are many arguments in here\n");
+fprintf(stderr, "exit: Too many arguments here!\n");
 return (0);
 }
 

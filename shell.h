@@ -32,7 +32,7 @@ int set_env(char **av, char *input, int *exiti);
 int print_env(char **av, char *input, int *exiti);
 int curr_dir(char **av, char *input, int *exiti);
 int _exe_builtin(char **a, char *user_input , char **args, int *exit_status );
-int exit(char **av, char *input, int *exiti);
+int exit_cmd(char **av, char *input, int *exiti);
 int exe_cmd(char **agu, char **arg, int *exiti);
 int space_ver(char *iinput);
 char *string_append(char *str_one, char *str_two);
