@@ -15,7 +15,7 @@ int _exe_builtin(char **a, char *user_input , char **args, int *exit_status )
 int i;
 
 choice_t choices[] = {
-{"exit", exit},
+{"exit", exit_cmd},
 {"en", print_env},
 {"cd", curr_dir},
 {"setenv", set_env},
