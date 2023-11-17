@@ -7,7 +7,7 @@
  * Return: Always 0 (Success)
  */
 
-int main(int arg trait((unused)), char **argc  trait((unused)))
+int main(int arg __attribute__((unused)), char **argc  __attribute__((unused)))
 {
 char **args = NULL;
 char *user_input  = NULL;
