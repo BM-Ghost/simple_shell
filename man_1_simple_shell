@@ -1,0 +1,36 @@
+.TH simple_shell 1 "17 Nov 2023" "Linux" "User Commands"
+.SH NAME
+simple_shell \- a simple command line interpreter
+.SH SYNOPSIS
+simple_shell [options] [command]
+.SH DESCRIPTION
+simple_shell is a simple command line interpreter that can be used to run commands.
+.SH OPTIONS
+.TP
+\fB-h\fR
+Displays help information.
+.TP
+\fB-v\fR
+Displays the version of the simple_shell.
+.SH EXAMPLES
+To run the `ls` command, you would type the following:
+
+simple_shell ls
+
+To display the help information, you would type the following:
+
+simple_shell -h
+
+To display the version of the simple_shell, you would type the following:
+
+simple_shell -v
+
+.SH SEE ALSO
+bash, sh
+.SH BUGS
+No known bugs.
+.SH AUTHORS
+Claudia Ageha(Chelsea) <claudiaageha@gmail.com>
+Meshack Bwire <basilmeshack13@gmail.com>
+.SH COPYRIGHT
+Copyright (c) 2023 Claudia Ageha & Meshack Bwire.
