@@ -1,46 +1,50 @@
 #include "shell.h"
 
 /**
-* main - entry point
-* @arg_count: args count
-* @arg_vect: args vector
-*
-* Return: 0 on success, 1 on error
-*/
+ * main - Shell entry point
+ * @argc: Argument count
+ * @argv: Array of arguments
+ * Return: Always 0 (Success)
+ */
 
-int main(int arg_count, char **arg_vect)
+int main(int arg trait((unused)), char **argc  trait((unused)))
 {
-	FuncInfo info[] = { INFO_INIT };
-	int file_descriptor = 2;
+char **args = NULL;
+char *user_input  = NULL;
+int tty_status  = 1;
+int exit_status  = 0;
 
-	asm ("mov %1, %0\n\t"
-	"add $3, %0"
-	: "=r" (file_descriptor)
-	: "r" (file_descriptor));
-	if (arg_count == 2)
-	{
-		file_descriptor = open(arg_vect[1], O_RDONLY);
-		if (file_descriptor == -1)
-		{
-			if (errno == EACCES)
-			{
-				fprintf(stderr, "Error: Opening Permission denied!! %s\n",
-				arg_vect[1]);
-				exit(98);
-			}
-			if (errno == ENOENT)
-			{
-				fprintf(stderr, "%s: 0: CANNOT OPEN %s\n", arg_vect[0],
-				arg_vect[1]);
-				exit(98);
-			}
-			fprintf(stderr, "Error: Opening failed!! %s\n", arg_vect[1]);
-			return (EXIT_FAILURE);
-		}
-		info->readfd = file_descriptor;
-	}
-	populateEnvList(info);
-	readHistory(info);
-	hshFunc(info, arg_vect);
-	return (EXIT_SUCCESS);
+
+ssize_t read_status  = 0;
+size_t input_size  = 0;
+
+while (tty_status  && read_status  != EOF)
+{
+input_size  = 0;
+tty_status  = isatty(STDIN_FILENO);
+
+if (tty_status )
+write(STDOUT_FILENO, "", 0);
+
+signal(SIGINT, manage_signal);
+read_status  = getline(&user_input , &input_size , stdin);
+if (read_status  == -1)
+{
+free(user_input );
+break;
+}
+if (space_ver(user_input ))
+{
+free(user_input );
+continue;
+}
+args = _token_util(user_input );
+if (*args[0] == '\0')
+continue;
+tty_status  = _exe_builtin(args, user_input , arg, &exit_status );
+free(user_input );
+free(args);
+}
+
+return (0);
 }
